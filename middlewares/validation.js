@@ -1,6 +1,17 @@
 const { celebrate, Joi } = require('celebrate');
+const isUrl = require('validator/lib/isURL');
+const BadRequestError = require('../errors/BadRequestError');
 
-const urlRegex = /^https?:\/\/(?:[a-z0-9]+(?:-[a-z0-9]+)*\.)+[a-z]{2,}(?::[0-9]+)?(?:\/[^\s]*)?$/i;
+const urlValidation = (url) => {
+  if (isUrl(url)) return url;
+  throw new BadRequestError('Некорректный URL');
+};
+
+const IdValidation = (id) => {
+  const regex = /^[0-9a-fA-F]{24}$/;
+  if (regex.test(id)) return id;
+  throw new BadRequestError('Некорректный id');
+};
 
 const createUserValidation = celebrate({
   body: Joi.object().keys({
@@ -8,7 +19,7 @@ const createUserValidation = celebrate({
     password: Joi.string().required().min(2),
     name: Joi.string().min(2).max(30),
     about: Joi.string().min(2).max(30),
-    avatar: Joi.string().pattern(urlRegex),
+    avatar: Joi.string().custom(urlValidation),
   }),
 });
 
@@ -21,13 +32,13 @@ const loginValidation = celebrate({
 
 const getUserByIdValidation = celebrate({
   params: Joi.object().keys({
-    userId: Joi.string().required().hex().length(24),
+    userId: Joi.string().required().custom(IdValidation),
   }),
 });
 
 const updateAvatarValidation = celebrate({
   body: Joi.object().keys({
-    avatar: Joi.string().required().pattern(urlRegex),
+    avatar: Joi.string().required().custom(urlValidation),
   }),
 });
 
@@ -41,13 +52,13 @@ const updateProfileValidation = celebrate({
 const createCardValidation = celebrate({
   body: Joi.object().keys({
     name: Joi.string().required().min(2).max(30),
-    link: Joi.string().required().pattern(urlRegex),
+    link: Joi.string().required().custom(urlValidation),
   }),
 });
 
 const cardIdValidation = celebrate({
   params: Joi.object().keys({
-    cardId: Joi.string().required().hex().length(24),
+    cardId: Joi.string().required().custom(IdValidation),
   }),
 });
 

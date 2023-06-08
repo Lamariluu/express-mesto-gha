@@ -16,7 +16,6 @@ const getCards = (req, res, next) => {
 
 const createCard = (req, res, next) => {
   const { name, link } = req.body;
-
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.status(HTTP_STATUS_CREATED).send(card))
     .catch(next);
@@ -27,7 +26,8 @@ const deleteCard = (req, res, next) => {
   Card.findById(req.params.cardId)
     .orFail()
     .then((card) => {
-      if (card.owner.toString() !== userId) {
+      const ownerId = card.owner.toString();
+      if (ownerId !== userId) {
         // попытка удаления чужой карточки
         return next(new ForbiddenError('Нет прав для удаления карточки'));
       }
@@ -65,7 +65,7 @@ const deleteLike = (req, res, next) => {
         return next(new NotFoundError('Некорректный id'));
       } return res.status(HTTP_STATUS_OK).send(card);
     })
-    .catch((err) => handleError(err, res));
+    .catch((err) => handleError(err, next));
 };
 
 module.exports = {
