@@ -1,40 +1,45 @@
 const Card = require('../models/card');
+const ForbiddenError = require('../errors/ForbiddenError');
+const NotFoundError = require('../errors/NotFoundError');
 
 const {
   handleError,
   HTTP_STATUS_OK,
   HTTP_STATUS_CREATED,
-  HTTP_STATUS_NOT_FOUND,
 } = require('../utils/constants');
 
-const getCards = (req, res) => {
+const getCards = (req, res, next) => {
   Card.find({})
     .then((cards) => res.status(HTTP_STATUS_OK).send(cards))
-    .catch((err) => handleError(err, res));
+    .catch(next);
 };
 
-const createCard = (req, res) => {
+const createCard = (req, res, next) => {
   const { name, link } = req.body;
 
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.status(HTTP_STATUS_CREATED).send(card))
-    .catch((err) => handleError(err, res));
+    .catch(next);
 };
 
-const deleteCard = (req, res) => {
-  Card.findByIdAndRemove(req.params.cardId)
+const deleteCard = (req, res, next) => {
+  const userId = req.user._id;
+  Card.findById(req.params.cardId)
+    .orFail()
     .then((card) => {
-      if (!card) {
-        return res
-          .status(HTTP_STATUS_NOT_FOUND)
-          .send({ message: 'Неправильный id' });
+      if (card.owner.toString() !== userId) {
+        // попытка удаления чужой карточки
+        return next(new ForbiddenError('Нет прав для удаления карточки'));
       }
-      return res.status(HTTP_STATUS_OK).send(card);
+      return card;
     })
-    .catch((err) => handleError(err, res));
+    // удаление карточки
+    .then((card) => Card.deleteOne(card))
+    .then((card) => res.status(HTTP_STATUS_OK).send(card))
+    .catch((err) => handleError(err, next));
 };
 
-const addLike = (req, res) => {
+const addLike = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
@@ -42,25 +47,22 @@ const addLike = (req, res) => {
   )
     .then((card) => {
       if (!card) {
-        return res
-          .status(HTTP_STATUS_NOT_FOUND)
-          .send({ message: 'Неправильный id' });
-      } return res.status(HTTP_STATUS_CREATED).send(card);
+        return next(new NotFoundError('Некорректный id'));
+      } return res.status(HTTP_STATUS_OK).send(card);
     })
-    .catch((err) => handleError(err, res));
+    .catch((err) => handleError(err, next));
 };
 
-const deleteLike = (req, res) => {
+const deleteLike = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } },
     { new: true },
   )
+    .orFail()
     .then((card) => {
       if (!card) {
-        return res
-          .status(HTTP_STATUS_NOT_FOUND)
-          .send({ message: 'Неправильный id' });
+        return next(new NotFoundError('Некорректный id'));
       } return res.status(HTTP_STATUS_OK).send(card);
     })
     .catch((err) => handleError(err, res));
