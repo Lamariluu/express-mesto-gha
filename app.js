@@ -1,10 +1,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const { errors } = require('celebrate');
-const { createUserValidation, loginValidation } = require('./middlewares/validation');
-const { login, createUser } = require('./controllers/users');
 const router = require('./routes/router');
 const auth = require('./middlewares/auth');
+const { handleErrors } = require('./middlewares/handleErrors');
 
 const app = express();
 const {
@@ -13,22 +12,10 @@ const {
 } = process.env;
 
 app.use(express.json());
-app.post('/signin', loginValidation, login);
-app.post('/signup', createUserValidation, createUser);
 app.use(router);
 app.use(auth);
 app.use(errors());
-
-app.use((err, req, res, next) => {
-  const { status = 500, message } = err;
-  res.status(status)
-    .send({
-      message: status === 500
-        ? 'На сервере произошла ошибка'
-        : message,
-    });
-  next();
-});
+app.use(handleErrors);
 
 mongoose
   .connect(MONGO_URL)

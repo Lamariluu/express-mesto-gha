@@ -3,17 +3,17 @@ const UnauthorizedError = require('../errors/UnauthorizedError');
 
 const auth = (req, res, next) => {
   const { authorization } = req.headers;
-  let payload;
   // проверка наличия токена
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    return next(new UnauthorizedError('Необходима авторизация'));
+    return next(new UnauthorizedError('Необходима авторизация 1'));
   }
   const token = authorization.replace('Bearer ', '');
+  let payload;
   try {
     // верификация токена
     payload = jwt.verify(token, 'secret-key');
   } catch (err) {
-    return next(new UnauthorizedError('Необходима авторизация'));
+    return next(new UnauthorizedError('Необходима авторизация 2'));
   }
   // добавление пейлоуд токена в объект запроса
   req.user = payload;
