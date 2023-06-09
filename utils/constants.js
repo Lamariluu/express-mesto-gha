@@ -20,7 +20,7 @@ const handleError = (err, next) => {
 
 module.exports = {
   handleError,
-  HTTP_STATUS_OK,
-  HTTP_STATUS_CREATED,
-  HTTP_STATUS_NOT_FOUND,
+  HTTP_STATUS_OK, // 200
+  HTTP_STATUS_CREATED, // 201
+  HTTP_STATUS_NOT_FOUND, // 400
 };

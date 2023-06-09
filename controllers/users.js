@@ -19,17 +19,6 @@ const getUsers = (req, res, next) => {
     .catch(next);
 };
 
-const getUserById = (req, res, next) => {
-  const { userId } = req.params;
-  User.findById(userId)
-    .then((user) => {
-      if (!user) {
-        return next(new NotFoundError('Пользователь не найден'));
-      } return res.send(user);
-    })
-    .catch((err) => handleError(err, next));
-};
-
 const getCurrentUser = (req, res, next) => {
   User.findById(req.user._id)
     .then((user) => {
@@ -38,6 +27,17 @@ const getCurrentUser = (req, res, next) => {
       }
       res.status(HTTP_STATUS_OK)
         .send(user);
+    })
+    .catch((err) => handleError(err, next));
+};
+
+const getUserById = (req, res, next) => {
+  const { userId } = req.params;
+  User.findById(userId)
+    .then((user) => {
+      if (!user) {
+        return next(new NotFoundError('Пользователь не найден'));
+      } return res.send(user);
     })
     .catch((err) => handleError(err, next));
 };
@@ -54,12 +54,10 @@ const createUser = (req, res, next) => {
         .then(() => res.status(HTTP_STATUS_CREATED)
           .send(
             {
-              data: {
-                name,
-                about,
-                avatar,
-                email,
-              },
+              name,
+              about,
+              avatar,
+              email,
             },
           ))
         .catch((err) => {
@@ -124,10 +122,10 @@ const login = (req, res, next) => {
 
 module.exports = {
   getUsers,
+  getCurrentUser,
   getUserById,
   createUser,
   updateProfile,
   updateAvatar,
   login,
-  getCurrentUser,
 };

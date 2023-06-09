@@ -24,7 +24,6 @@ const createCard = (req, res, next) => {
 const deleteCard = (req, res, next) => {
   const userId = req.user._id;
   Card.findById(req.params.cardId)
-    .orFail()
     .then((card) => {
       const ownerId = card.owner.toString();
       if (ownerId !== userId) {
@@ -59,7 +58,6 @@ const deleteLike = (req, res, next) => {
     { $pull: { likes: req.user._id } },
     { new: true },
   )
-    .orFail()
     .then((card) => {
       if (!card) {
         return next(new NotFoundError('Некорректный id'));
