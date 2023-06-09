@@ -7,7 +7,7 @@ const urlValidation = (url) => {
   throw new BadRequestError('Некорректный URL');
 };
 
-const IdValidation = (id) => {
+const idValidation = (id) => {
   const regex = /^[0-9a-fA-F]{24}$/;
   if (regex.test(id)) return id;
   throw new BadRequestError('Некорректный id');
@@ -32,7 +32,7 @@ const loginValidation = celebrate({
 
 const getUserByIdValidation = celebrate({
   params: Joi.object().keys({
-    userId: Joi.string().required().custom(IdValidation),
+    userId: Joi.string().required().custom(idValidation),
   }),
 });
 
@@ -58,7 +58,7 @@ const createCardValidation = celebrate({
 
 const cardIdValidation = celebrate({
   params: Joi.object().keys({
-    cardId: Joi.string().required().custom(IdValidation),
+    cardId: Joi.string().required().custom(idValidation),
   }),
 });
 

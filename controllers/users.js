@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const NotFoundError = require('../errors/NotFoundError');
-const UnauthorizedError = require('../errors/UnauthorizedError');
+const BadRequestError = require('../errors/BadRequestError');
 const ConflictError = require('../errors/ConflictError');
 
 const User = require('../models/user');
@@ -51,15 +51,25 @@ const createUser = (req, res, next) => {
       User.create({
         name, about, avatar, email, password: hash,
       })
-        .then((user) => {
-          const noPassword = user.toObject({ useProjection: true });
-          res.status(HTTP_STATUS_CREATED).send(noPassword);
-        })
+        .then(() => res.status(HTTP_STATUS_CREATED)
+          .send(
+            {
+              data: {
+                name,
+                about,
+                avatar,
+                email,
+              },
+            },
+          ))
         .catch((err) => {
           if (err.code === 11000) {
             return next(new ConflictError('Пользователь с указанным email уже зарегистрирован'));
           }
-          return handleError(err, next);
+          if (err.name === 'ValidationError') {
+            return next(new BadRequestError('Некорректные данные'));
+          }
+          return next(err);
         });
     })
     .catch(next);
@@ -67,7 +77,6 @@ const createUser = (req, res, next) => {
 
 const updateProfile = (req, res, next) => {
   const { name, about } = req.body;
-
   User.findByIdAndUpdate(
     req.user._id,
     { name, about },
@@ -101,22 +110,14 @@ const updateAvatar = (req, res, next) => {
 
 const login = (req, res, next) => {
   const { email, password } = req.body;
-  // поиск пользователя по email
-  User.findOne({ email }).select('+password')
+  return User
+    .findUserByCredentials(email, password)
+    // создание JWT с токеном сроком на неделю
     .then((user) => {
-      if (!user) {
-        return next(new UnauthorizedError('Некорректные почта или пароль'));
-      }
-      // проверка правильности пароля
-      return bcrypt.compare(password, user.password)
-        .then((isMatch) => {
-          if (!isMatch) {
-            return next(new UnauthorizedError('Некорректные почта или пароль'));
-          }
-          // создание JWT с токеном сроком на неделю
-          const token = jwt.sign({ _id: user._id }, 'secret-key', { expiresIn: '7d' });
-          return res.send({ token });
-        });
+      const token = jwt.sign({ _id: user._id }, 'secret-key', {
+        expiresIn: '7d',
+      });
+      res.send({ token });
     })
     .catch(next);
 };
